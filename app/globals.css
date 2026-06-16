@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: white;
+    color: #1A1A1A;
+  }
+}
+
+@layer components {
+  .section-padding {
+    @apply py-16 md:py-20 px-4;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 md:px-6;
+  }
+
+  .heading-underline {
+    position: relative;
+  }
+  .heading-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+    width: 48px;
+    height: 3px;
+    background-color: #C8941A;
+    border-radius: 2px;
+  }
+}
