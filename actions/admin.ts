@@ -3,18 +3,13 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import type { Journal, Faculty, NewsEvent, Programme } from '@/types/database'
 
-// Helper to check admin role
-async function isAdmin() {
+// Check if user is authenticated (any logged-in user is allowed)
+async function isAuthenticated() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-  return profile?.role === 'admin'
+  return !!user // returns true if user exists, false if not
 }
 
 // ========== JOURNALS ==========
@@ -30,7 +25,7 @@ export async function getJournals() {
 }
 
 export async function createJournal(formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   
   const supabase = await createServerClient()
   const title = formData.get('title') as string
@@ -44,16 +39,17 @@ export async function createJournal(formData: FormData) {
     volume: parseInt(formData.get('volume') as string),
     year: parseInt(formData.get('year') as string),
     published_date: formData.get('published_date'),
-    tags: (formData.get('tags') as string).split(',').map(t => t.trim()),
+    tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
     pdf_url: formData.get('pdf_url') || null,
   })
   if (error) throw new Error(error.message)
   revalidatePath('/admin/journals')
   revalidatePath('/journals')
+  revalidatePath('/')
 }
 
 export async function updateJournal(id: string, formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('journals').update({
     title: formData.get('title'),
@@ -62,29 +58,28 @@ export async function updateJournal(id: string, formData: FormData) {
     volume: parseInt(formData.get('volume') as string),
     year: parseInt(formData.get('year') as string),
     published_date: formData.get('published_date'),
-    tags: (formData.get('tags') as string).split(',').map(t => t.trim()),
+    tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
     pdf_url: formData.get('pdf_url') || null,
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/journals')
   revalidatePath('/journals')
+  revalidatePath('/')
 }
 
 export async function deleteJournal(id: string) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('journals').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/journals')
   revalidatePath('/journals')
+  revalidatePath('/')
 }
-
-// Similar actions for faculty, news, programmes...
-// (I'll provide full file – ask me if you want all functions)
 
 // ========== FACULTY ==========
 export async function createFaculty(formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('faculty').insert({
     name: formData.get('name'),
@@ -98,10 +93,11 @@ export async function createFaculty(formData: FormData) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/faculty')
   revalidatePath('/faculty')
+  revalidatePath('/')
 }
 
 export async function updateFaculty(id: string, formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('faculty').update({
     name: formData.get('name'),
@@ -115,20 +111,22 @@ export async function updateFaculty(id: string, formData: FormData) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/faculty')
   revalidatePath('/faculty')
+  revalidatePath('/')
 }
 
 export async function deleteFaculty(id: string) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('faculty').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/faculty')
   revalidatePath('/faculty')
+  revalidatePath('/')
 }
 
 // ========== NEWS ==========
 export async function createNews(formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const title = formData.get('title') as string
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -143,10 +141,11 @@ export async function createNews(formData: FormData) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/news')
   revalidatePath('/news')
+  revalidatePath('/')
 }
 
 export async function updateNews(id: string, formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('news_events').update({
     title: formData.get('title'),
@@ -158,20 +157,22 @@ export async function updateNews(id: string, formData: FormData) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/news')
   revalidatePath('/news')
+  revalidatePath('/')
 }
 
 export async function deleteNews(id: string) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('news_events').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/news')
   revalidatePath('/news')
+  revalidatePath('/')
 }
 
 // ========== PROGRAMMES ==========
 export async function createProgramme(formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('programmes').insert({
     title: formData.get('title'),
@@ -181,11 +182,12 @@ export async function createProgramme(formData: FormData) {
   })
   if (error) throw new Error(error.message)
   revalidatePath('/admin/programmes')
-  revalidatePath('/#programmes')
+  revalidatePath('/programmes')
+  revalidatePath('/')
 }
 
 export async function updateProgramme(id: string, formData: FormData) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('programmes').update({
     title: formData.get('title'),
@@ -195,16 +197,18 @@ export async function updateProgramme(id: string, formData: FormData) {
   }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/programmes')
-  revalidatePath('/#programmes')
+  revalidatePath('/programmes')
+  revalidatePath('/')
 }
 
 export async function deleteProgramme(id: string) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const { error } = await supabase.from('programmes').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/programmes')
-  revalidatePath('/#programmes')
+  revalidatePath('/programmes')
+  revalidatePath('/')
 }
 
 // ========== SETTINGS ==========
@@ -218,7 +222,7 @@ export async function getSettings() {
 }
 
 export async function updateSettings(settingsData: Record<string, string>) {
-  if (!await isAdmin()) throw new Error('Unauthorized')
+  if (!await isAuthenticated()) throw new Error('Unauthorized')
   const supabase = await createServerClient()
   const updates = Object.entries(settingsData).map(([key, value]) =>
     supabase.from('settings').upsert({ key, value, type: 'text' })
