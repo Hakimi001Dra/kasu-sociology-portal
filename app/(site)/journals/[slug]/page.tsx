@@ -1,22 +1,32 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
+// Use a regular client – NO cookies, NO server client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+// generateStaticParams uses the regular client (no cookies)
 export async function generateStaticParams() {
-  const supabase = await createServerClient()
-  const { data: journals } = await supabase.from('journals').select('slug')
+  const { data: journals } = await supabase
+    .from('journals')
+    .select('slug')
+  
   return journals?.map((j) => ({ slug: j.slug })) || []
 }
 
 export default async function ArticlePage({ params }: PageProps) {
   const { slug } = await params
-  const supabase = await createServerClient()
+
+  // Use the same regular client (no cookies)
   const { data: article } = await supabase
     .from('journals')
     .select('*')
@@ -29,7 +39,10 @@ export default async function ArticlePage({ params }: PageProps) {
     <>
       <div className="bg-kasu-green py-12">
         <div className="container-custom">
-          <Link href="/journals" className="inline-flex items-center gap-2 text-kasu-gold hover:text-kasu-gold/80 mb-4">
+          <Link
+            href="/journals"
+            className="inline-flex items-center gap-2 text-kasu-gold hover:text-kasu-gold/80 mb-4 transition-colors"
+          >
             <ArrowLeft size={16} /> Back to Journals
           </Link>
           <h1 className="font-playfair text-3xl md:text-5xl font-bold text-white max-w-4xl">
