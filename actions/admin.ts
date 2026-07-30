@@ -1,5 +1,4 @@
-'use server'
-import type { Journal, Faculty, NewsEvent, Programme } from '@/types/database'
+
 import { createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin } from '@/lib/supabase/admin'
